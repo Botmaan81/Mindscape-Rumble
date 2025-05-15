@@ -1,0 +1,502 @@
+import mysql.connector as sqltor
+import sys
+import random
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Database connection
+mydb = sqltor.connect(
+    host="localhost",
+    user="root",
+    password="root",
+    database='quiz')
+mycursor = mydb.cursor()
+
+# Main Program Layout
+def Home():
+    print('''Welcome To MINDSCAPE RUMBLE!!!!
+          
+1. Format Questions
+2. Take Quiz
+3. Question Bank
+4. Scoreboard
+5. Exit from Quiz
+''') 
+
+# Checking for Errors
+    try:
+        f = int(input('Enter Your choice no.:'))
+    except ValueError:
+        print('Please enter a valid number.')
+        print()
+        Home()
+        return
+    print()
+    if f==1:    # To format Questions
+    #Password for teacher Security
+        pass_word = input('Enter Teacher Password: ')
+        if pass_word == 'Welcome':
+            print()
+            Format_Ques()
+        else:
+            print('You have entered an invalid password, please try again....')
+            print()
+            Home()   
+    elif f==2:  # To take the Quiz
+        Quiz()
+    elif f==3:  # To see the Questions
+        Ques_Bank()
+    elif f==4:  # To check Scoreboard
+        Score_Board()
+    elif f==5:  # To exit and closing the connection
+        print('Exiting The Quiz...')
+        mydb.commit()
+        mycursor.close()
+        mydb.close()
+        sys.exit()
+    else:       # For Invalid input
+        print('You have entered an invalid input, please try again')
+        print()
+        Home()
+
+# Program to feed Questions into the System
+def Format_Ques():
+    # Checking for Errors
+    try:
+        ch = int(input('''What do you wish to format in the Question Bank
+                       
+1. Add Questions to  the Bank
+2. Update Questions in the Bank
+3. Delete Questions from the Bank
+4. Exit to Home
+
+Enter your choice no.: '''))
+    except ValueError:
+        print('Please enter a valid number.')
+        print()
+        Format_Ques()
+        
+    # Features in Format Questions
+    if ch == 1:        # To add Questions
+        Add_Ques()
+    elif ch == 2:      # To update Questions
+        Update_Ques()
+    elif ch == 3:      # To remove Questions
+        Remove_Ques()
+    elif ch == 4:      # For exiting to Home
+        Home()
+    else:              # For invalid Inputs
+        print('Please Enter a valid response')
+        print()
+        Format_Ques()        
+# Creating a Dataframe for Question Table    
+def Q_bank():
+    mycursor.execute("select * from ques_bank")
+    q_bank=pd.DataFrame([],columns=['Question ID','Questions','Option 1','Option 2','Option 3','Option 4','Answer'])
+    for row in mycursor.fetchall():
+         row=list(row)
+         q_bank.loc[len(q_bank)]=row
+    q_bank.index=q_bank.index+1
+    pd.set_option('display.max_columns',None)
+    pd.set_option('display.max_rows',None)
+    pd.set_option('display.width', 1000)
+    return q_bank
+           
+# To add Questions        
+def Add_Ques():
+    # Feeding Questions
+    print('Welcome To Question Portal')
+    print()
+    ques = input('Enter Question: ')
+    opt1 = input('Enter Option 1: ')
+    opt2 = input('Enter Option 2: ')
+    opt3 = input('Enter Option 3: ')
+    opt4 = input('Enter Option 4: ')
+    print()
+    
+    # Selecting answer and Checking for Errors
+    ans = None
+    while True:
+        try:
+            op = int(input('Enter Correct Option No. (1-4): '))
+            if op in [1, 2, 3, 4]:
+                ans = [opt1, opt2, opt3, opt4][op - 1]
+                break
+            else:
+                print('Please choose a valid option (1-4).')
+        except ValueError:
+            print('Please enter a valid number.')
+            print()
+    mycursor.execute('''insert into ques_bank(ques,opt1,opt2,opt3,opt4,ans) 
+values (%s, %s, %s, %s, %s, %s)''', (ques, opt1, opt2, opt3, opt4, ans))           
+    
+    # To Add more questions while Checking for Errors
+    add_more=None
+    while add_more is None:
+        try:
+            add_more=input('Your Question has been added...Do you wish to add more questions(Yes/No):').strip().lower()
+            print()
+            if add_more=='yes':
+                Add_Ques()
+            elif add_more=='no':
+                Format_Ques()
+            else:
+                print('Please enter a correct response')
+                print()
+                Format_Ques()
+        except ValueError:
+            print('Please enter a valid response')
+            print()
+            Format_Ques()
+            
+#To Update Questions
+def Update_Ques():
+    print('Welcome To Question Portal')
+    print()
+    print('Select your question which you want to update from the bank')
+    q_bank=Q_bank()
+    print(q_bank)
+    print()
+    
+    # Updating Questions
+    up_ques = int(input('Enter the question no. that you want to update in the Question Bank: '))
+    print()
+    if mycursor.execute:
+        opt1 = input('Enter Option 1: ')
+        opt2 = input('Enter Option 2: ')
+        opt3 = input('Enter Option 3: ')
+        opt4 = input('Enter Option 4: ')
+
+        # Selecting answer and Checking for Errors
+        ans = None
+        while True:
+            try:
+                op = int(input('Enter Correct Option No. (1-4): '))
+                if op in [1, 2, 3, 4]:
+                    ans = [opt1, opt2, opt3, opt4][op - 1]
+                    break
+                else:
+                    print('Please choose a valid option (1-4).')
+            except ValueError:
+                print('Please enter a valid number.')
+        mycursor.execute('update ques_bank set opt1 =%s, opt2 =%s, opt3 =%s, opt4 =%s, ans =%s where qid =%s',(opt1,opt2,opt3,opt4,ans,up_ques))
+    else:
+        print('Plese enter a valid question no.')
+        print()
+        Update_Ques()
+        
+    # To Update more questions while Checking for Errors
+    up_more=None
+    while up_more is None:
+        try:
+            up_more=input('Your Question has been updated...Do you wish to update more questions(Yes/No):').strip().lower()
+            print()
+            if up_more=='yes':
+                Update_Ques()
+            elif up_more=='no':
+                Format_Ques()
+            else:
+                print('Please enter a correct response')
+                print()
+                Format_Ques()
+        except ValueError:
+            print('Please enter a valid response')
+            print()
+            Format_Ques()
+            
+# To Remove Questions
+def Remove_Ques():
+    print('Welcome to Question Portal')
+    print()
+    print('Select the Question which you want to remove from the bank')
+    q_bank=Q_bank()
+    print(q_bank)
+    print()
+    
+    # Removing Questions
+    rem_ques = int(input('Enter the question ID that you want to remove from the Question Bank: '))
+    print()
+    mycursor.execute('select * from ques_bank where qid = %s', (rem_ques,))
+    if rem_ques in q_bank['Question ID']:
+        mycursor.execute('delete from ques_bank where qid = %s', (rem_ques,))
+    else:
+        print('Your requested question does not exist.')
+        print()
+        Format_Ques()
+        
+    # To Remove more questions while Checking for Errors    
+    rem_more=None
+    while rem_more is None:
+        try:
+            rem_more=input('Your Question has been removed...Do you wish to remove more questions(Yes/No):').strip().lower()
+            print()
+            if rem_more=='yes':
+                Remove_Ques()
+                break
+            elif rem_more=='no':
+                Format_Ques()
+            else:
+                print('Please enter a correct response')
+                print()
+                Format_Ques()
+        except ValueError:
+            print('Please enter a valid response')
+            print()
+            Format_Ques()
+
+# To take the Quiz         
+def Quiz():
+    print('Welcome To Quiz Portal!!!')
+    print()
+    # Retreiving Info for student score table
+    mycursor.execute("SELECT * FROM ques_bank")
+    data = mycursor.fetchall()
+    rc = mycursor.rowcount
+    
+    # Checking for valid studetn name and ID
+    st_id=None
+    while st_id is None:
+        st_id = input('Enter you valid Scholar no.: ')
+        print()
+    name=None
+    while name is None:
+        name =str(input('Enter your Name: '))
+        print()
+    
+    # Checking for Errors
+    try:
+        noq=int(input(f'Enter the number of questions to attempt(maximum {rc}):'))
+    except ValueError:
+        print('Please enter a valid number.')
+        print()
+        Quiz()
+        return
+    
+    # Main Quiz
+    if rc >= noq:
+        l = random.sample(range(rc), noq)
+        print('Quiz has started!!!')
+        print()
+        score=0
+        for i in l:
+            question = data[i]
+            print()
+            print('Q.', question[1])  # Display the question text
+            print('A.', question[2], '\t\tB.', question[3], '\t\tC.', question[4], '\t\tD.', question[5])
+            print()
+            
+            ans = None
+            while ans is None:
+                choice = input('Answer (A, B, C, D): ').strip().lower()
+                if choice=='a':
+                   ans=question[2]
+                elif choice=='b':
+                   ans=question[3]
+                elif choice=='c':
+                   ans=question[4]
+                elif choice=='d':
+                   ans=question[5]
+                else:
+                    print('Kindly select A, B, C, or D as options only')
+                    print()
+            if ans==question[6]:
+                print('Correct!!')
+                print()
+                score+=1
+            else:
+                print(f'Sorry but your answer is incorrect... the correct answer is {question[6]}')
+        print(f'The Quiz has ended!! {name}, Your final score is = {score} Points!!')
+        print()
+    else:
+        print('You have entered more than possible questions asked in the quiz... Please enter a maximum of',rc,'number of questions to attempt')
+        print()
+        Quiz()
+        
+    Noq=str(noq)
+    mycursor.execute("""insert into student_score (st_id, name, ques_attempt, score)
+values (%s, %s, %s, %s)
+on duplicate key update
+name = values(name),
+ques_attempt = values(ques_attempt),
+score = values(score)""",(st_id, name, Noq, score))
+
+    # Checking for Errors    
+    feature=None
+    while feature is None:
+        try:
+            feature=int(input('''What do you wish to refer
+                          
+1. Show Percentage
+2. Retake Quiz
+3. Return To Home
+
+Enter your choice no.:'''))
+        except ValueError:
+            print('Please enter a valid input')
+            print()
+            
+    # Features in Quiz        
+    while feature==1:
+        # To see Percentage 
+        percentage = (score // noq) * 100
+        print(f'You got {percentage}%')
+        feature=int(input('''What do you wish to refer
+                          
+1. Show Percentage
+2. Retake Quiz
+3. Return To Home
+
+Enter your choice no.:'''))
+    if feature==2:          # Retake the Quiz
+        print()
+        Quiz()
+    elif feature==3:        # Exiting to Home
+        print()
+        Home()
+    else:
+        print('Please enter a correct input')
+        print()
+        Home()
+        
+#To see Question Bank
+def Ques_Bank():
+    print('Welcome to Question Bank!!!')
+    print()
+    q_bank=Q_bank()
+    
+    # Checking for Errors
+    try:
+        f = int(input('''What do you wish to refer from the Question Bank 
+                      
+1. Full Table
+2. Size of Table
+3. Shape of Table
+4. A Certain question
+5. Exit to Home
+
+Enter your choice no.: '''))
+    except ValueError:
+        print('Please etner a valid input')
+        print()
+        Ques_Bank()
+        
+    # Feature in Question Bank
+    if f == 1:             # To see the full table
+        print(q_bank)
+        print()
+        Ques_Bank()
+    elif f == 2:           # Size of Question bank
+        print('Size of Question Bank:',q_bank.size)
+        print()
+        Ques_Bank()
+    elif f == 3:           # Shape of  Question Bank
+        print('Shape of Question Bank:',q_bank.shape)
+        print()
+        Ques_Bank()
+    elif f == 4:           # To view a certain Question
+        num = int(input('Please enter which question ID you want to view: '))
+        print()
+        info=q_bank[q_bank['Question ID']==num]
+        
+        try:                    # Checking for Errors
+            print(info)
+            print()
+            Ques_Bank()
+        except ValueError :
+            print('Given question ID does not exist.')
+            print()
+            Ques_Bank()
+    elif f == 5:               # Exiting to Home 
+        Home()
+    else:
+        print('Invalid choice, please try again.')
+        print()
+        Ques_Bank()
+
+#To check Scoreboard
+def Score_Board():
+    print('Welcome to Scoreboard!!!')
+    print()
+    
+    try:                      # Checking for Errors
+        f=int(input('''What do you wish to see
+1. Scoreboard
+2. Graph
+3. A Certain Score
+4. Highest and Lowest Score
+5. Exit to Home Menu
+
+Enter your choice no.:'''))
+    except ValueError:
+        print('Please enter a valid input')
+        print()
+        Score_Board()
+        
+    #Creating Dataframe for Scoreboard
+    mycursor.execute('select st_id from student_score')
+    sId=tuple(mycursor.fetchall())
+    mycursor.execute('select name,ques_attempt,score from student_score')
+    s_score=pd.DataFrame([],columns=['Name of the Student','Questions Attempted','Scores'])
+    for row in mycursor.fetchall():
+         row=list(row)
+         s_score.loc[len(s_score)]=row
+    s_score.index=sId
+    pd.set_option('display.max_columns',None)
+    pd.set_option('display.max_rows',None)
+    pd.set_option('display.width', 1000)
+    s_score.head()
+    
+    # Creating GRaph for Average Score and Question attempted
+    mean_scores = s_score.groupby('Questions Attempted')['Scores'].mean()
+    plt.plot(mean_scores.index, mean_scores.values, marker='o')
+    plt.xlabel('Questions Attempted')
+    plt.ylabel('Marks Obtained')
+    plt.title('Performance Chart')
+    
+    # Feature in Scoreboard
+    if f==1:                  # To see the full table
+        print(s_score)
+        print()
+        Score_Board()
+    elif f==2:                # To see average number of Question attempeted by Students
+        plt.show()
+        print()
+        Score_Board()
+    elif f==3:                # To view a certain Student
+        
+    # Checking for error
+        try:
+            st_id=int(input('Enter your Scholar Number:'))
+        except ValueError:
+            print('Please enter a valid Scholar Number')
+            print()
+            Score_Board()
+            return
+        if st_id in s_score.index:
+            print(s_score.loc[st_id])
+            print()
+            Score_Board()
+        else:
+            print('Your have either entered a wrong Scholar Number or you have not attempted quiz once')
+            print()
+            Score_Board()
+            
+    elif f==4:                 # To see Maximum and Minimum score in Scoreboard
+        score=s_score['Scores']
+        min_score=score.idxmin()
+        print('''Minimum score
+''',s_score.loc[min_score])
+        print()
+        max_score=score.idxmax()
+        print('''Maximum score
+''',s_score.loc[max_score])
+        print()
+        Score_Board()
+    elif f==5:                   # Exiting to Home
+        Home()
+    else:
+        print('Enter a Valid Response')
+        Score_Board()
+        
+# Starting Program        
+Home()        
